@@ -45,7 +45,22 @@ export default function RegisterPage() {
       navigate('/dashboard');
     } catch (err) {
       console.error('Registration failed', err);
-      setError(err.response?.data?.message || 'Registration failed. The email may already be in use.');
+      if (!err.response) {
+        setError('Unable to connect to the backend server. Please verify the server is running or check your connection.');
+      } else if (err.response.status === 409) {
+        setError(err.response.data?.message || 'An account with this email already exists. Please sign in or use a different email.');
+      } else if (err.response.status === 400) {
+        if (err.response.data?.fieldErrors && Object.keys(err.response.data.fieldErrors).length > 0) {
+          const firstErrorMessage = Object.values(err.response.data.fieldErrors)[0];
+          setError(firstErrorMessage);
+        } else {
+          setError(err.response.data?.message || 'Invalid registration details provided. Please check the form.');
+        }
+      } else if (err.response.status >= 500) {
+        setError('A server error occurred while processing your registration. Please try again later.');
+      } else {
+        setError(err.response.data?.message || 'Registration failed. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
